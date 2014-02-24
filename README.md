@@ -1,5 +1,5 @@
 # Shake2Feedback
-An Alloy widget to supply instant easy feedback from an app, including screenshot.
+An Titanium tool to supply instant easy feedback from an app, including screenshot.
 
 ## Install
 
@@ -8,18 +8,32 @@ An Alloy widget to supply instant easy feedback from an app, including screensho
 3. In your `alloy.js` add:
 
 ```
-Alloy.createWidget('wz.Feedback', {
-	recipients: ['support@company.com', 'ticket@jra.company.com']
-});
+require('shake2feedback').init({
+    recipients: ['support@company.com', 'ticket@jra.company.com']
+})
+```
+## Custom styles
+```
+/*
+UI components:
+feedbackWindow, cancelButton, sendButton, comment, screenshot, paintView
+ */
+require('shake2feedback').init({
+    recipients: ['support@company.com', 'ticket@jra.company.com'],
+    styles: {
+        feedbackWindow: {
+            borderColor: 'red'
+        }
+    }
+}
+})
 ```
 
 ## Use
 Shake, then feedback :)
 
 ## Customize
-Use the `wzFeedback_` keys to translate texts.
-
-Use the `wzFeedback_` ID's (not classes) to overide the styles.
+Use the `Feedback_` keys to translate texts.
 
 ## License
 Copyright WappZapp TV
