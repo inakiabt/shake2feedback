@@ -141,6 +141,7 @@ function sendFeedback(evt)
             availableMemory: Ti.Platform.availableMemory,
             displayCaps: Ti.Platform.displayCaps,
             id: Ti.Platform.id,
+            feedback: body,
             locale: Ti.Platform.locale,
             manufacturer: Ti.Platform.manufacturer,
             model: Ti.Platform.model,
