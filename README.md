@@ -3,7 +3,7 @@ An Titanium tool to supply instant easy feedback from an app, including screensh
 
 ## Install
 
-1. Use [gitTio](http://gitt.io/component/wz.Feedback): `gittio install wz.Feedback` or download the repo as zip etc.
+1. Download the repo as zip etc.
 2. Also install ti.pain (`gittio install ti.paint`)
 3. In your `alloy.js` add:
 
