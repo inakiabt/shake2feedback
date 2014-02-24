@@ -14,14 +14,38 @@ var isOpen = false,
     paintView,
     defaultStyles,
 
+    extraInfoBuilder,
+
     subject,
     recipients;
 
 exports.init = function(options){
-    if (initialized === true)
+    if (!initialized)
     {
-        return;
+        extraInfoBuilder = options.onBuildExtraInfo;
+
+        Ti.Gesture.addEventListener('shake', function(e) {
+
+            // Only show once
+            if (isOpen)
+            {
+                return;
+            }
+
+            isOpen = true;
+
+            // Take screenshot
+            Titanium.Media.takeScreenshot(function(e) {
+                // Open window
+                openWindow(options, e.media);
+            });
+        });
+        initialized = true;
     }
+};
+
+function openWindow(options, image)
+{
 
     options = options || {};
 
@@ -33,12 +57,12 @@ exports.init = function(options){
     defaults(styles, defaultStyles);
 
     // UI
-    var feedbackWindow = Ti.UI.createWindow(styles.feedbackWindow),
-        cancelButton = Ti.UI.createButton(styles.cancelButton),
-        sendButton = Ti.UI.createButton(styles.sendButton),
-        comment = Ti.UI.createTextArea(styles.comment),
-        screenshot = Ti.UI.createImageView(styles.screenshot),
-        paintView = Paint.createPaintView(style.paintView);
+    feedbackWindow = Ti.UI.createWindow(styles.feedbackWindow);
+    cancelButton = Ti.UI.createButton(styles.cancelButton);
+    sendButton = Ti.UI.createButton(styles.sendButton);
+    comment = Ti.UI.createTextArea(styles.comment);
+    screenshot = Ti.UI.createImageView(styles.screenshot);
+    paintView = Paint.createPaintView(styles.paintView);
 
     if (!isAndroid)
     {
@@ -46,34 +70,12 @@ exports.init = function(options){
         sendButton.setStyle(Ti.UI.iPhone.SystemButtonStyle.PLAIN);
     }
 
-    feedbackWindow.addEventListener('close', closeWindow);
+    feedbackWindow.addEventListener('close', clean);
     sendButton.addEventListener('click', sendFeedback);
+    cancelButton.addEventListener('click', closeWindow);
     comment.addEventListener('focus', removeHintText);
 
-    Ti.Gesture.addEventListener('shake', function(e) {
-
-        // Save hintText
-        hintText = comment.value;
-
-        // Only show once
-        if (isOpen)
-        {
-            return;
-        }
-
-        isOpen = true;
-
-        // Take screenshot
-        Titanium.Media.takeScreenshot(function(e) {
-
-            // Set values
-            comment.value = hintText;
-            screenshot.image = e.media;
-
-            // Open window
-            feedbackWindow.open();
-        });
-    });
+    screenshot.setImage(image);
 
     screenshot.add(paintView);
     feedbackWindow.add(cancelButton);
@@ -81,18 +83,41 @@ exports.init = function(options){
     feedbackWindow.add(comment);
     feedbackWindow.add(screenshot);
 
-    initialized = true;
-};
+    feedbackWindow.open();
+}
 
 function closeWindow(evt)
 {
-    this.close();
+
+    feedbackWindow.close();
+}
+
+function clean(evt)
+{
+
+    feedbackWindow.removeEventListener('close', clean);
+    sendButton.removeEventListener('click', sendFeedback);
+    cancelButton.removeEventListener('click', closeWindow);
+    comment.removeEventListener('focus', removeHintText);
+
+    screenshot.remove(paintView);
+    feedbackWindow.remove(screenshot);
+    feedbackWindow.remove(cancelButton);
+    feedbackWindow.remove(sendButton);
+    feedbackWindow.remove(comment);
+
+    feedbackWindow = null;
 
     isOpen = false;
 }
 
 function sendFeedback(evt)
 {
+    if (!isOpen)
+    {
+        return;
+    }
+
     var emailDialog = Titanium.UI.createEmailDialog();
 
     // Not supported
@@ -109,7 +134,29 @@ function sendFeedback(evt)
         emailDialog.setToRecipients(recipients);
     }
 
-    emailDialog.setMessageBody(comment.value);
+    var body = comment.value,
+        extraInfo = {
+            apiName: Ti.Platform.apiName,
+            architecture: Ti.Platform.architecture,
+            availableMemory: Ti.Platform.availableMemory,
+            displayCaps: Ti.Platform.displayCaps,
+            id: Ti.Platform.id,
+            locale: Ti.Platform.locale,
+            manufacturer: Ti.Platform.manufacturer,
+            model: Ti.Platform.model,
+            name: Ti.Platform.name,
+            osname: Ti.Platform.osname,
+            version: Ti.Platform.version
+        };
+
+    if (typeof extraInfoBuilder === 'function')
+    {
+        extraInfoBuilder(extraInfo);
+    }
+
+    body += '<div style="color: white" id="info">' + Ti.Utils.base64encode(JSON.stringify(extraInfo))+'</div>';
+
+    emailDialog.setMessageBody(body);
     emailDialog.addAttachment(screenshot.toImage());
 
     if (OS_IOS)
@@ -118,8 +165,9 @@ function sendFeedback(evt)
     }
 
     emailDialog.addEventListener('complete', function(e) {
-        if (e.result == emailDialog.SENT) {
-            closeWindow();
+        if (e.result == emailDialog.SENT)
+        {
+            _.delay(closeWindow, 1000);
         }
     });
 
@@ -128,6 +176,10 @@ function sendFeedback(evt)
 
 function removeHintText(evt)
 {
+    if (!isOpen)
+    {
+        return;
+    }
     comment.removeEventListener('focus', removeHintText);
     comment.value = '';
 }
@@ -149,14 +201,16 @@ function defaults(obj, source)
     }
 }
 
-defaultStyles = styles = {
+defaultStyles = {
     "feedbackWindow": {
         backgroundColor: "#CCC",
+
+        top: '22dp',
 
         modal: true,
 
         /* not available on iOS7, hide on iOS6 */
-        navBarHidden: true
+        navBarHidden: false
     },
 
     "cancelButton": {
