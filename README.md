@@ -5,7 +5,7 @@ An Titanium tool to supply instant easy feedback from an app, including screensh
 
 1. Download the repo as zip etc.
 2. Also install ti.pain (`gittio install ti.paint`)
-3. In your `alloy.js` add:
+3. In your `app.js` (or wherever you want) add:
 
 ```javascript
 require('shake2feedback').init({
