@@ -168,7 +168,8 @@ function sendFeedback(evt)
     emailDialog.addEventListener('complete', function(e) {
         if (e.result == emailDialog.SENT)
         {
-            _.delay(closeWindow, 1000);
+            // Fixes possible error while two modal windows are being closed (email dialog is a modal window too)
+            setTimeout(closeWindow, 1000);
         }
     });
 
